@@ -383,7 +383,7 @@ const sendEmailConfirmation = async (user) => {
         from: process.env.EMAIL_USER,
         to: user.email,
         subject: 'Confirmation Email',
-        text: `Click link to confirm your email: http://localhost:9000/confirm-email/${user.emailToken}`
+        text: `Click link to confirm your email: http://${process.env.FRONT_END_IP}/confirm-email/${user.emailToken}`
     };
 
     await transport.sendMail(mailOptions, function (error, info) {
@@ -433,7 +433,7 @@ const changeEmailConfirmation = async (user) => {
         from: process.env.EMAIL_USER,
         to: user.email,
         subject: 'Reset your password',
-        text: `Click link to confirm your new email change: http://localhost:9000/confirm-email-change/${user.emailToken}`
+        text: `Click link to confirm your new email change: http://${process.env.FRONT_END_IP}/confirm-email-change/:${user.emailToken}`
     };
 
     await transport.sendMail(mailOptions, function (error, info) {
