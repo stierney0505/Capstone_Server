@@ -28,8 +28,8 @@ const login = async (req, res) => {
 
                 if (validatePassword) {
                     //Generate Access and refresh tokens
-                    const accessToken = generateAccessToken(user.id, user.email);
-                    const refreshToken = generateRefreshToken(user.id, user.email);
+                    const accessToken = generateAccessToken(user.id, user.email, user.name);
+                    const refreshToken = generateRefreshToken(user.id, user.email, user.name);
 
                     if (await addRefreshToken(user, refreshToken)) {
                         res.status(200).json({
@@ -88,10 +88,10 @@ const register = async (req, res) => {
             await user.save();
 
             //create JWT token
-            const access_token = generateAccessToken(user.id, user.email);
+            const access_token = generateAccessToken(user.id, user.email, user.name);
 
             //create refresh token
-            const refreshToken = generateRefreshToken(user.id, user.email);
+            const refreshToken = generateRefreshToken(user.id, user.email, user.name);
 
             await User.updateOne({ email: user.email }, {
                 $push: {
@@ -113,6 +113,7 @@ const register = async (req, res) => {
                     user: {
                         id: user.id,
                         email: user.email,
+                        name: user.name,
                     }
                 }
             });
@@ -143,7 +144,7 @@ const token = async (req, res) => {
             //checking if refresh token is in document
             if (existingTokens.some(token => token.refreshToken === refreshToken)) {
                 //generate new access token
-                const access_token = generateAccessToken(user.id, user.email);
+                const access_token = generateAccessToken(user.id, user.email, user.name);
 
                 res.status(200).header().json({
                     success: {
@@ -453,6 +454,7 @@ const generateAccessToken = (id, email, uName) => {
     let items = {
         _id: id,
         email: email,
+        name: uName,
     }
     return JWT.sign(items, process.env.SECRET_ACCESS_TOKEN, { expiresIn: process.env.ACCESS_TOKEN_EXPIRY })
 }
@@ -461,6 +463,7 @@ const generateRefreshToken = (id, email, uName) => {
     let items = {
         _id: id,
         email: email,
+        name: uName,
     }
     return JWT.sign(items, process.env.SECRET_REFRESH_TOKEN, { expiresIn: process.env.REFRESH_TOKEN_EXPIRY })
 }
