@@ -2,13 +2,13 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "WorkBranch"]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "WorkBranch"]
 
 jobs:
   build:
-
+    
     runs-on: ubuntu-latest
 
     strategy:
