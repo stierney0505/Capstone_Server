@@ -16,9 +16,10 @@ const authRoutes = require('./routes/auth');
 app.use('/api', authRoutes);
 
 require('dotenv').config();
-const port = process.env.PORT || 4001;
+const port = process.env.PORT || 3000;
 
-mongoose.connect(`${process.env.DB_PROTOCOL}://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?${process.env.DB_PARAMS}`,
+async function dbConnect() {
+await mongoose.connect(`${process.env.DB_PROTOCOL}://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?${process.env.DB_PARAMS}`,
     {
         autoIndex: true,
     }).then(() => {
@@ -28,10 +29,15 @@ mongoose.connect(`${process.env.DB_PROTOCOL}://${process.env.DB_USER}:${process.
     }).catch((err) => {
         console.log(err);
     });
+}
+
+dbConnect();
 
 process.on('SIGINT', () => {
     mongoose.connection.close();
     console.log('Mongoose disconnected on app termination');
     process.exit(0);
 });
+
+module.exports = app;
 

@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const JWT = require('jsonwebtoken');
-const { registerSchema, loginSchema } = require('../helpers/validation');
+const { registerSchema, loginSchema, emailSchema } = require('../helpers/validation');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
@@ -14,7 +14,7 @@ const login = async (req, res) => {
         if (error) {
             res.status(400).json({
                 status: 400,
-                message: 'Input Error',
+                message: 'INPUT_ERROR',
                 errors: error.details,
                 original: error._original
             });
@@ -35,24 +35,24 @@ const login = async (req, res) => {
                         res.status(200).json({
                             success: {
                                 status: 200,
-                                message: "Login Success",
+                                message: "LOGIN_SUCCESS",
                                 accessToken: accessToken,
                                 refreshToken: refreshToken
                             }
                         })
                     } else {
-                        res.status(500).json({ error: { status: 500, message: 'Server Error' } });
+                        res.status(500).json({ error: { status: 500, message: 'SERVER_ERROR' } });
                     }
                 } else {
-                    res.status(403).json({ error: { status: 403, message: "Invalid password" } });
+                    res.status(403).json({ error: { status: 403, message: "INVALID_PASSWORD" } });
                 }
             } else {
-                res.status(403).json({ error: { status: 403, message: "Invalid email" } });
+                res.status(403).json({ error: { status: 403, message: "INVALID_EMAIL" } });
             }
         }
     } catch (error) {
         console.log(error);
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 }
 
@@ -62,7 +62,7 @@ const register = async (req, res) => {
         const { error } = registerSchema.validate(req.body, { abortEarly: false });
 
         if (error) {
-            res.status(400).json({ status: 400, message: 'Input_Error', errors: error.details, original: error._original });
+            res.status(400).json({ status: 400, message: 'INPUT_ERROR', errors: error.details, original: error._original });
         } else {
             //hash password
             const salt = await bcrypt.genSalt(10);
@@ -72,6 +72,7 @@ const register = async (req, res) => {
             const user = new User({
                 email: req.body.email,
                 password: hashedPassword,
+                name: req.body.name,
                 emailConfirmed: false,
                 emailToken: uuidv4(),
                 security: {
@@ -149,19 +150,18 @@ const token = async (req, res) => {
                 res.status(200).header().json({
                     success: {
                         status: 200,
-                        message: 'Access_Token_Generated',
+                        message: 'ACCESS_TOKEN_GENERATED',
                         accessToken: access_token
                     },
                 });
             } else {
-                res.status(401).json({ error: { status: 401, message: 'Invalid Refresh Token' } });
+                res.status(401).json({ error: { status: 401, message: 'EXPIRED_REFRESH_TOKEN' } });
             }
-
         } catch (error) {
-            res.status(401).json({ error: { status: 401, message: 'Invalid Refresh Token' } });
+            res.status(401).json({ error: { status: 401, message: 'INVALID_REFRESH_TOKEN' } });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: 'Bad Request' } });
+        res.status(400).json({ error: { status: 400, message: 'BAD_REQUEST' } });
     }
 }
 
@@ -182,19 +182,18 @@ const confirmEmailToken = async (req, res) => {
                 //check if provided email token matches
                 if (emailToken === user.emailToken) {
                     await User.updateOne({ email: decodeAccessToken.email }, { $set: { emailConfirmed: true, emailToken: null } })
-                    res.status(200).json({ success: { status: 200, message: "Email Confirmed" } });
+                    res.status(200).json({ success: { status: 200, message: "EMAIL_CONFIRMED" } });
                 } else {
-                    res.status(401).json({ error: { status: 401, message: "Invalid email token" } });
+                    res.status(401).json({ error: { status: 401, message: "INVALID_EMAIL_TOKEN" } });
                 }
             } else {
-                res.status(401).json({ error: { status: 401, message: "Email already confirmed" } });
+                res.status(401).json({ error: { status: 401, message: "EMAIL_ALREADY_CONFIRMED" } });
             }
         } else {
-            res.status(400).json({ error: { status: 400, message: "Bad request" } });
+            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
         }
-
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 }
 
@@ -222,13 +221,13 @@ const resetPassword = async (req, res) => {
             });
 
             await sendPasswordResetConfirmation({ email: req.body.email, passwordResetToken: passwordResetToken })
-            res.status(200).json({ success: { status: 200, message: "Password Reset Email Sent" } })
+            res.status(200).json({ success: { status: 200, message: "PWD_RESET_EMAIL_SENT" } })
 
         } else {
-            res.status(400).json({ error: { status: 400, message: "Password input error" } });
+            res.status(400).json({ error: { status: 400, message: "INPUT_ERROR" } });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 }
 
@@ -250,7 +249,7 @@ const resetPasswordConfirm = async (req, res) => {
                     },
                 });
 
-                res.status(200).json({ success: { status: 200, message: "Password Reset Success" } });
+                res.status(200).json({ success: { status: 200, message: "PWD_RESET" } });
             } else {
                 //Removing password reset token because expiry  
                 await User.updateOne({ email: req.body.email }, {
@@ -260,13 +259,13 @@ const resetPasswordConfirm = async (req, res) => {
                         'security.passwordReset.expiry': null,
                     },
                 });
-                res.status(401).json({ error: { status: 401, message: "Password reset token expired" } });
+                res.status(401).json({ error: { status: 401, message: "PWD_TOKEN_EXPIRED" } });
             }
         } else {
-            res.status(401).json({ error: { status: 401, message: "Invalid password reset token" } });
+            res.status(401).json({ error: { status: 401, message: "INVALID_PWD_TOKEN" } });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 }
 
@@ -296,12 +295,12 @@ const changeEmailConfirm = async (req, res) => {
                             'security.changeEmail.expiry': null,
                         },
                     });
-                    res.status(200).json({ success: { status: 200, message: "Email Change Success" } });
+                    res.status(200).json({ success: { status: 200, message: "EMAIL_CHANGED" } });
                 } else {
-                    res.status(401).json({ error: { status: 401, message: "Email Token Expired" } });
+                    res.status(401).json({ error: { status: 401, message: "EMAIL_TOKEN_EXPIRED" } });
                 }
             } else {
-                res.status(401).json({ error: { status: 401, message: "Invalid Email Token" } });
+                res.status(401).json({ error: { status: 401, message: "INVALID_EMAIL_TOKEN" } });
             }
         } else { //if the email already exists remove the emailreset fields
             await User.updateOne({ email: decodeAccessToken.email }, {
@@ -313,14 +312,15 @@ const changeEmailConfirm = async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 };
 
 
 const changeEmail = async (req, res) => {
     try {
-        if (validation.email.validate({ email: req.body.provisionalEmail })) {
+        const { error } = emailSchema.validate({ email: req.body.provisionalEmail });
+        if ( !error ) {
             //Decode Access Token
             const accessToken = req.header('Authorization').split(' ')[1];
             const decodeAccessToken = JWT.verify(accessToken, process.env.SECRET_ACCESS_TOKEN);
@@ -344,16 +344,16 @@ const changeEmail = async (req, res) => {
                     },
                 });
 
-                await changeEmailConfirmation({email: user.email, emailToken: changeEmailToken});
-                res.status(200).json({success: {status: 200, message: "Change Email Sent"}});
+                await changeEmailConfirmation({ email: user.email, emailToken: changeEmailToken });
+                res.status(200).json({ success: { status: 200, message: "CHANGE_EMAIL_SENT" } });
             } else {
-                res.status(400).json({error: {status: 400, message: "Email Already Registered"}});
+                res.status(400).json({ error: { status: 400, message: "EMAIL_EXISTS" } });
             }
-        } else { 
-            res.status(400).json({error: {status: 400, message: "Provided Email Invalid"}});
+        } else {
+            res.status(400).json({ error: { status: 400, message: "INPUT_ERROR" } });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Bad Request" } });
+        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
     }
 }
 
@@ -390,8 +390,6 @@ const sendEmailConfirmation = async (user) => {
     await transport.sendMail(mailOptions, function (error, info) {
         if (error) {
             console.log(error);
-        } else {
-            console.log(info);
         }
     });
 }
@@ -415,8 +413,6 @@ const sendPasswordResetConfirmation = async (user) => {
     await transport.sendMail(mailOptions, function (error, info) {
         if (error) {
             console.log(error);
-        } else {
-            console.log(info);
         }
     });
 };
@@ -440,8 +436,6 @@ const changeEmailConfirmation = async (user) => {
     await transport.sendMail(mailOptions, function (error, info) {
         if (error) {
             console.log(error);
-        } else {
-            console.log(info);
         }
     });
 };
@@ -512,6 +506,6 @@ const addRefreshToken = async (user, refreshToken) => {
 module.exports = {
     test, register, token,
     confirmEmailToken, login,
-    resetPassword, resetPasswordConfirm, 
+    resetPassword, resetPasswordConfirm,
     changeEmail, changeEmailConfirm
 };

@@ -1,5 +1,5 @@
 const express = require('express');
-const authController = require('../controllers/authenicate');
+const authController = require('../controllers/authenticate');
 
 //API MIDDLEWARE
 const verifyToken = require('../helpers/verifyToken')
@@ -13,7 +13,7 @@ const router = express.Router();
 router.get('/auth/test', [rateLimiter(50, 10), verifyToken], authController.test);
 
 //POST REGISTER
-router.post('/register', rateLimiter(10, 10), authController.register);
+router.post('/register', rateLimiter(50, 10), authController.register);
 
 //POST TOKEN
 router.post('/auth/token', authController.token);
@@ -31,9 +31,9 @@ router.post('/resetPassword', authController.resetPassword);
 router.post('/confirmResetPassword', authController.resetPasswordConfirm);
 
 //POST Change Email
-router.post('/changeEmail', authController.changeEmail);
+router.post('/changeEmail', verifyToken, authController.changeEmail);
 
 //POST Confirm Change Email
-router.post('/changeEmailConfirm', authController.changeEmailConfirm);
+router.post('/changeEmailConfirm', verifyToken, authController.changeEmailConfirm);
 
 module.exports = router;

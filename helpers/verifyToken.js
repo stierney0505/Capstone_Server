@@ -10,14 +10,14 @@ const auth = (req, res, next) => {
                 next();
             } catch (error) {
                 console.log(error0);
-                res.status(401).json({ error: { status: 401, message: "BAD_TOKEN" } });
+                res.status(401).json({ error: { status: 401, message: "INVALID_ACCESS_TOKEN" } });
             }
 
         } else {
-            res.status(400).json({ error: { status: 401, message: "Access Denied1" } });
+            res.status(400).json({ error: { status: 401, message: "NO_TOKEN" } });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "Access Denied2" } });
+        res.status(400).json({ error: { status: 400, message: "ACCESS_DENIED" } });
     }
 }
 
