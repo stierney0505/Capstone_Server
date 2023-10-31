@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         default: true
     },
+    userType: {
+        type: Number, 
+        default: 0
+    },
     emailToken: {
         type: String
     },
