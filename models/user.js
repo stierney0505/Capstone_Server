@@ -27,8 +27,41 @@ const userSchema = new mongoose.Schema({
         default: true
     },
     userType: {
-        type: Number, 
-        default: 0
+        Type: {
+            type: Number, 
+            required: true,
+            default: 0
+            // 0 is student 
+            // 1 is faculty
+            // 2 is industry
+            // >3 is admin
+        },
+        Confirmed: {
+            type: Boolean,
+            default: false
+        },
+        FacultyProjects: {
+            Archived: {
+                type: mongoose.ObjectId
+            },
+            Active: {
+                type: mongoose.ObjectId
+            },
+            Draft: {
+                type: mongoose.ObjectId,
+            }
+        },
+        StudentProjects: {
+            Rejected: {
+                type: mongoose.ObjectId
+            },
+            Pending: {
+                type: mongoose.ObjectId
+            },
+            Accepted: {
+                type: mongoose.ObjectId,
+            }
+        }
     },
     emailToken: {
         type: String
