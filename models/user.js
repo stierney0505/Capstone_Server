@@ -42,24 +42,30 @@ const userSchema = new mongoose.Schema({
         },
         FacultyProjects: {
             Archived: {
-                type: mongoose.ObjectId
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             },
             Active: {
-                type: mongoose.ObjectId
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             },
             Draft: {
-                type: mongoose.ObjectId,
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             }
         },
         StudentProjects: {
             Rejected: {
-                type: mongoose.ObjectId
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             },
             Pending: {
-                type: mongoose.ObjectId
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             },
             Accepted: {
-                type: mongoose.ObjectId,
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'ProjectGroup'
             }
         }
     },

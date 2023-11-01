@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const ApplicationOpp = new mongoose.Schema({
     user: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
     questions: [{
@@ -10,7 +10,7 @@ const ApplicationOpp = new mongoose.Schema({
         answer: String
     }],
     opportunityId: {
-        type: mongoose.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     },
     status: {
@@ -19,4 +19,4 @@ const ApplicationOpp = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('Application', userSchema);
