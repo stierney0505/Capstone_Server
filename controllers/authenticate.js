@@ -103,7 +103,8 @@ const register = async (req, res) => {
                 },
             });
 
-            await sendEmailConfirmation(user);
+            // commented to avoid emails being sent while using
+            // await sendEmailConfirmation(user);
 
             res.status(200).header().json({
                 success: {

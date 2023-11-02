@@ -1,11 +1,15 @@
 PORT=
 
+# for MongoDB Atlas
 DB_USER=
 DB_PASS=
 DB_HOST=
 DB_PROTOCOL=
 DB_NAME=
 DB_PARAMS=
+
+# for local MongoDB (instead of Atlas)
+DB_URI=
 
 SECRET_REFRESH_TOKEN=
 REFRESH_TOKEN_EXPIRY=
