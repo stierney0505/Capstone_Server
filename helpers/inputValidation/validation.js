@@ -15,8 +15,28 @@ const emailSchema = Joi.object({
     "email": Joi.string().min(6).max(25).email().required(),
 })
 
+const projectSchema = Joi.object({
+    "projectName": Joi.string().required(),
+    "posted": Joi.date(),
+    "description": Joi.string().required(), 
+    "questions": Joi.array().items(Joi.string()),
+    "requirements": Joi.array().items(
+        Joi.object({
+            requirementType: Joi.number(),
+            requirementValue: Joi.string(),
+            required : Joi.boolean().required(),
+        })
+    ),
+})
+
+const deleteProjectSchema = Joi.object({
+    "id": Joi.string()
+})
+
 module.exports = {
     registerSchema,
     loginSchema,
-    emailSchema
+    emailSchema,
+    projectSchema,
+    deleteProjectSchema
 }

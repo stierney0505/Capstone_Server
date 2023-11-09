@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
             type: Boolean,
             default: false
         },
-        FacultyProjects: {
+        FacultyProjects: {  
             Archived: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'ProjectGroup'

@@ -11,9 +11,11 @@ app.use(cors());
 
 //routes
 const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
 
 //Endpoints
 app.use('/api', authRoutes);
+app.use('/api/projects', projectRoutes);
 
 require('dotenv').config();
 const port = process.env.PORT || 3000;

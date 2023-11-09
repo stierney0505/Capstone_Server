@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const JWT = require('jsonwebtoken');
-const { registerSchema, loginSchema, emailSchema } = require('../helpers/validation');
+const { registerSchema, loginSchema, emailSchema } = require('../helpers/inputValidation/validation');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
@@ -62,7 +62,7 @@ const register = async (req, res) => {
         const { error } = registerSchema.validate(req.body, { abortEarly: false });
 
         if (error) {
-            res.status(400).json({ status: 400, message: 'INPUT_ERROR', errors: error.details, original: error._original });
+            res.status(400).json({ error: { status: 400, message: 'INPUT_ERROR', errors: error.details, original: error._original }});
         } else {
             //hash password
             const salt = await bcrypt.genSalt(10);
@@ -82,7 +82,16 @@ const register = async (req, res) => {
                         provisionalPassword: null,
                         expiry: null
                     }
-                }
+                },
+                userType: { //TEMPORARY AS FACULTY ACCOUNT WILL CHANGE IN FUTURE 
+                    Type: 1,
+                    Confirmed: true,
+                    FacultyProjects : {
+                        Active : null,
+                        Archived : null,
+                        Draft : null,
+                    }
+                },
             });
 
             //attempt save user
@@ -320,7 +329,7 @@ const changeEmailConfirm = async (req, res) => {
 const changeEmail = async (req, res) => {
     try {
         const { error } = emailSchema.validate({ email: req.body.provisionalEmail });
-        if ( !error ) {
+        if (!error) {
             //Decode Access Token
             const accessToken = req.header('Authorization').split(' ')[1];
             const decodeAccessToken = JWT.verify(accessToken, process.env.SECRET_ACCESS_TOKEN);
