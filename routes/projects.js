@@ -17,4 +17,6 @@ router.post('/createProject', verifyToken, facultyProjects.createProject);
 //DELETE Delete Project
 router.delete('/deleteProject', verifyToken, facultyProjects.deleteProject);
 
+router.get('/getProjects', verifyToken, facultyProjects.getProjects);
+
 module.exports = router;

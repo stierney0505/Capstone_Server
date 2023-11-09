@@ -30,7 +30,8 @@ const projectSchema = Joi.object({
 })
 
 const deleteProjectSchema = Joi.object({
-    "id": Joi.string()
+    "projectID": Joi.string(),
+    "projectType": Joi.string()
 })
 
 module.exports = {

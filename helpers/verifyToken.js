@@ -9,7 +9,7 @@ const auth = (req, res, next) => {
                 req.user = JWT.verify(token, process.env.SECRET_ACCESS_TOKEN);
                 next();
             } catch (error) {
-                console.log(error0);
+                console.log(error);
                 res.status(401).json({ error: { status: 401, message: "INVALID_ACCESS_TOKEN" } });
             }
 
