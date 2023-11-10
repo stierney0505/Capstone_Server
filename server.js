@@ -4,10 +4,12 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors')
 
+app.set('trust proxy', '127.0.0.1');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cors());
+require('dotenv').config();
 
 //routes
 const authRoutes = require('./routes/auth');
@@ -15,8 +17,7 @@ const authRoutes = require('./routes/auth');
 //Endpoints
 app.use('/api', authRoutes);
 
-require('dotenv').config();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 async function dbConnect() {
     //mongodb atlas: ${process.env.DB_PROTOCOL}://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?${process.env.DB_PARAMS}
