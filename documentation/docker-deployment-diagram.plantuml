@@ -1,0 +1,37 @@
+@startuml docker-deployment-diagram
+node reverseProxy [
+<b>Reverse Proxy</b>
+
+----
+<b><color:#009639>Nginx</color></b>
+<b>Port:</b> 3000
+]
+node frontend [
+<b>Front-End Server</b>
+
+----
+<b><color:#de221d>Angular</color></b> on <b><color:#009639>Nginx</color></b>
+<b>Port:</b> 4200
+]
+node backend [
+<b>Back-End Server</b>
+
+----
+<b><color:#3f3f3f>Express.js</color></b> & <b><color:#7cb949>Node.js</color></b>
+<b>Port:</b> 5000
+]
+node mongoDatabase [
+<b>Database</b>
+
+----
+<b><color:#408a44>MongoDB</color></b>
+<b>Port:</b> 27017
+]
+
+reverseProxy -r-> frontend : / routes
+frontend -l-> reverseProxy : webpages
+reverseProxy -d-> backend : /api routes
+backend -u-> reverseProxy : data
+backend -r-> mongoDatabase : CRUD operations
+mongoDatabase -l-> backend : results
+@enduml
