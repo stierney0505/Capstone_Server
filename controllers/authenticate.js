@@ -6,12 +6,16 @@ const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const moment = require('moment');
 
-
+/*  This function handles the login funciton, should only be used with a POST request
+    This funciton takes the login credentials and returns an accesstoken and refresh token
+    
+    The request body requires the following fields : 
+    email (String, the email of the account(might be replaced with username in future)) - password (String, the password of the account)
+*/
 const login = async (req, res) => {
     try {
-        const { error } = loginSchema.validate(req.body);
-
-        if (error) {
+        const { error } = loginSchema.validate(req.body); 
+        if (error) { //validates the request body, and responds with error if there is an error
             res.status(400).json({
                 status: 400,
                 message: 'INPUT_ERROR',
@@ -21,9 +25,9 @@ const login = async (req, res) => {
         } else {
             const user = await User.findOne({ email: req.body.email });
 
-            //check that the email is correct
+            //check that there exists a user with that email, otherwise sends an error response
             if (user) {
-                //Check if the password is correct
+                //Check if the password is correct against the hashed password in the db, otherwise sends error response
                 const validatePassword = await bcrypt.compare(req.body.password, user.password);
 
                 if (validatePassword) {
@@ -31,7 +35,7 @@ const login = async (req, res) => {
                     const accessToken = generateAccessToken(user.id, user.email, user.name);
                     const refreshToken = generateRefreshToken(user.id, user.email, user.name);
 
-                    if (await addRefreshToken(user, refreshToken)) {
+                    if (await addRefreshToken(user, refreshToken)) { //adds refreshtoken to db
                         res.status(200).json({
                             success: {
                                 status: 200,
@@ -39,7 +43,7 @@ const login = async (req, res) => {
                                 accessToken: accessToken,
                                 refreshToken: refreshToken
                             }
-                        })
+                        });
                     } else {
                         res.status(500).json({ error: { status: 500, message: 'SERVER_ERROR' } });
                     }
@@ -56,15 +60,20 @@ const login = async (req, res) => {
     }
 }
 
-
+/*  This Incomplete function handles the account creation, should only be used with a POST request
+    This funciton takes the information required to create an account and creates an account in the database. It is still incomplete pending the finalization
+    of the account creation frontend, as we will add additional fields. This function should return an access & refresh token and account information upon success 
+    
+    The request body requires the following fields : 
+    email (String, email of account) - name (String, name of user) - password (String, password for the account)
+*/
 const register = async (req, res) => {
-    try {
+    try { 
         const { error } = registerSchema.validate(req.body, { abortEarly: false });
-
-        if (error) {
+        if (error) { //Validates the request body against the registration schema, otherwise sends an error response
             res.status(400).json({ error: { status: 400, message: 'INPUT_ERROR', errors: error.details, original: error._original }});
         } else {
-            //hash password
+            //hash the user's password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
@@ -83,7 +92,7 @@ const register = async (req, res) => {
                         expiry: null
                     }
                 },
-                userType: { //TEMPORARY AS FACULTY ACCOUNT WILL CHANGE IN FUTURE 
+                userType: { //Temporarialy hardcoded, will make every account a faculty account, will be updated in the future
                     Type: 1,
                     Confirmed: true,
                     FacultyProjects : {
@@ -141,12 +150,17 @@ const register = async (req, res) => {
     }
 }
 
+/*  This function handles the access token regeneration, should only be used with a POST request
+    This function takes a refreshtoken and should respond with an accesstoken when the refresh token is valid
+    
+    The request body requires the following fields : 
+    refreshtoken (String, the refreshtoken that will be used to validate the request/generate new access token)
+*/
 const token = async (req, res) => {
     try {
         const refreshToken = req.body.refreshToken;
 
-        //verify that the token is valid
-        try {
+        try { // Gets the email from the refresh token and validates the refreshtoken against the database
             const decodeRefreshToken = JWT.verify(refreshToken, process.env.SECRET_REFRESH_TOKEN);
             const user = await User.findOne({ email: decodeRefreshToken.email });
             const existingTokens = await user.security.tokens;
@@ -174,12 +188,18 @@ const token = async (req, res) => {
     }
 }
 
-
+/*  This function handles the email confirmation, should only be used with a POST request, and requires an accesstoken
+    This function takes an email token in the request body and if then attempt to confirm the user's email if the token 
+    matches the email token in the database
+    
+    The request body requires the following fields : 
+    emailToken (String, the token that will be used to attempt to validate the email of the account)
+*/
 const confirmEmailToken = async (req, res) => {
     try {
         const emailToken = req.body.emailToken;
 
-        if (emailToken !== null) {
+        if (emailToken !== null) { //if there is no email token then do nothing
             const accessToken = req.header('Authorization').split(' ')[1];
             const decodeAccessToken = JWT.verify(accessToken, process.env.SECRET_ACCESS_TOKEN);
 
@@ -206,7 +226,13 @@ const confirmEmailToken = async (req, res) => {
     }
 }
 
-//body request includes provisionalpassword and email
+/*  This function handles the reset password requests, should only be used with a POST request
+    This function takes the email of the account and password that will replace the user's password. This function doesn't replace the user's password,
+    but instead sets up the database with information required to allow a password to be reset, such as password reset token and reset token expiry
+    
+    The request body requires the following fields : 
+    email (String, the email of the account) - provisionalPassword (String, the new password)
+*/
 const resetPassword = async (req, res) => {
     try {
         if (req.body.provisionalPassword.length >= 6 && req.body.provisionalPassword.length <= 255) {
@@ -214,12 +240,12 @@ const resetPassword = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(req.body.provisionalPassword, salt);
 
-            //Generate Password Reset Token
+            //Generate Password Reset Token and expiresIn - 10 minutes
             const passwordResetToken = uuidv4();
             const expiresIn = moment().add(10, 'm').toISOString();
 
-            //Update user with password token
-            const user = await User.findOneAndUpdate({ email: req.body.email }, {
+            //Update user with password token, expiry, and provisional password
+            await User.findOneAndUpdate({ email: req.body.email }, {
                 $set: {
                     'security.passwordReset': {
                         token: passwordResetToken,
@@ -228,7 +254,7 @@ const resetPassword = async (req, res) => {
                     },
                 },
             });
-
+            //sends email to the users notifying them
             await sendPasswordResetConfirmation({ email: req.body.email, passwordResetToken: passwordResetToken })
             res.status(200).json({ success: { status: 200, message: "PWD_RESET_EMAIL_SENT" } })
 
@@ -240,6 +266,13 @@ const resetPassword = async (req, res) => {
     }
 }
 
+/*  This function handles the reset password functionality, should only be used with a POST request
+    This function takes the password reset token and user email. If these are validated, then the password is reset to the provisional password
+    set in the passwordReset function.
+    
+    The request body requires the following fields : 
+    email (String, the email of the account) - passwordResetToken (String, token needed to reset the password)
+*/
 const resetPasswordConfirm = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email });
@@ -250,7 +283,7 @@ const resetPasswordConfirm = async (req, res) => {
             //check if password reset token expired
             if (new Date().getTime() <= new Date(user.security.passwordReset.expiry).getTime()) {
                 await User.updateOne({ email: req.body.email }, {
-                    $set: {
+                    $set: { //resets the password reset fields, and sets the password to the new password
                         'password': user.security.passwordReset.provisionalPassword,
                         'security.passwordReset.token': null,
                         'security.passwordReset.provisionalPassword': null,
@@ -278,26 +311,31 @@ const resetPasswordConfirm = async (req, res) => {
     }
 }
 
+/*  This function handles the emailChange functionality, should only be used with a POST request, and requires a valid access token
+    This function takes an emailresetToken and validates it against the database. If it is validated then the email is reset to the provisional email
 
+    The request body requires the following fields : 
+    emailResetToken (String, the email reset token of the account) 
+*/
 const changeEmailConfirm = async (req, res) => {
     try {
         //Decode Access Token
         const accessToken = req.header('Authorization').split(' ')[1];
         const decodeAccessToken = JWT.verify(accessToken, process.env.SECRET_ACCESS_TOKEN);
 
-        //get user
+        //get user from email in the access token
         const user = await User.findOne({ email: decodeAccessToken.email });
 
-        //check if email exists
+        //check if email exists 
         const existingEmail = await User.findOne({ email: user.security.changeEmail.provisionalEmail });
 
-        if (!existingEmail) {//if the email doesn't already exist
+        if (!existingEmail) {//if the email doesn't already exist sends error response 
             if (user.security.changeEmail.token === req.body.changeEmailToken) { //check that changeEmailToken is correct
 
                 //check that email token isn't expired
                 if (new Date().getTime() <= new Date(user.security.changeEmail.expiry).getTime()) {
                     await User.updateOne({ email: decodeAccessToken.email }, {
-                        $set: {
+                        $set: { 
                             'email': user.security.changeEmail.provisionalEmail,
                             'security.changeEmail.token': null,
                             'security.changeEmail.provisionalEmail': null,
@@ -305,7 +343,14 @@ const changeEmailConfirm = async (req, res) => {
                         },
                     });
                     res.status(200).json({ success: { status: 200, message: "EMAIL_CHANGED" } });
-                } else {
+                } else { //Otherwise the email token is expired and the reset token fields should be reset
+                    await User.updateOne({ email: decodeAccessToken.email }, {
+                        $set: { 
+                            'security.changeEmail.token': null,
+                            'security.changeEmail.provisionalEmail': null,
+                            'security.changeEmail.expiry': null,
+                        },
+                    });
                     res.status(401).json({ error: { status: 401, message: "EMAIL_TOKEN_EXPIRED" } });
                 }
             } else {
@@ -325,7 +370,13 @@ const changeEmailConfirm = async (req, res) => {
     }
 };
 
+/*  This function handles the emailChange requests, should only be used with a POST request, and requires a valid access token
+    This function takes an provisionalEmail sets up the database to accept a changeEmailConfirm request. This function does not change the email of the user,
+    but instead prepares the database/backend to securely change the email of a user account.
 
+    The request body requires the following fields : 
+    provisionalEmail (String, the new email for the account)
+*/
 const changeEmail = async (req, res) => {
     try {
         const { error } = emailSchema.validate({ email: req.body.provisionalEmail });
@@ -366,7 +417,7 @@ const changeEmail = async (req, res) => {
     }
 }
 
-
+/* Test function, nothing important here */
 const test = async (req, res) => {
     try {
         req.user
@@ -379,7 +430,9 @@ const test = async (req, res) => {
 
 //Helper methods
 
-//Email Helper Methods
+/*  These functions send an email to the user which allow them to confirm their email, reset their password, or change their email assuming that their 
+    account is set up to properly handle such a request (and maybe they have a valid access token)
+*/
 const sendEmailConfirmation = async (user) => {
     let transport = nodemailer.createTransport({
         service: 'gmail',
@@ -452,7 +505,7 @@ const changeEmailConfirmation = async (user) => {
 
 
 
-//Token Helper Methods
+// These two function handles the token generation, either accesstoken for accessing api/webapp or refresh token for regenerating an access token
 const generateAccessToken = (id, email, uName) => {
     let items = {
         _id: id,
@@ -471,6 +524,12 @@ const generateRefreshToken = (id, email, uName) => {
     return JWT.sign(items, process.env.SECRET_REFRESH_TOKEN, { expiresIn: process.env.REFRESH_TOKEN_EXPIRY })
 }
 
+/*  This function handles the refresh token addition to the database. This function takes a user record and a refreshtoken and adds the refreshtoken to the 
+    user's record in the database. 
+
+    Currently, the database only supports having 5 refreshtokens active at a time, so if there is less than 5 in the database the refresh token is added to 
+    the existingRefreshTokens array otherwise a token is removed from the array and replaced with the refreshtoken in this function's parameter
+*/
 const addRefreshToken = async (user, refreshToken) => {
     try {
         const existingRefreshTokens = user.security.tokens;

@@ -14,7 +14,7 @@ const randomEmail = Math.random().toString(36).substring(8) + "@gmail.com";
 const changeRandomEmail = Math.random().toString(36).substring(8) + "@gmail.com";
 
 
-before(function (done) {
+before(function (done) { //This waits for the connection to the DB to be set up before running the tests
     this.timeout(4000);
     setTimeout(done, 3000);
 });
@@ -43,7 +43,7 @@ describe('POST /api/register', () => {
 
                 access_token = res.body.success.accessToken;
                 refresh_token = res.body.success.refreshToken;
-                id = res.body.success.id;
+                removeID = res.body.success.user.id;
                 done();
             });
     });
@@ -182,7 +182,7 @@ describe('POST /api/changeEmailConfirm', () => {
 
 after(async () => {
     try {
-        await User.deleteOne({ id: removeID });
+        await User.deleteOne({ _id: removeID });
         console.log("data deleted");
     } catch (err) {
         console.error(err);
