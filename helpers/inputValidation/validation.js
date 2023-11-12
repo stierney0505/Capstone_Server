@@ -16,21 +16,24 @@ const emailSchema = Joi.object({
 })
 
 const projectSchema = Joi.object({
-    "projectName": Joi.string().required(),
-    "posted": Joi.date(),
-    "description": Joi.string().required(), 
-    "questions": Joi.array().items(Joi.string()),
-    "requirements": Joi.array().items(
-        Joi.object({
-            requirementType: Joi.number(),
-            requirementValue: Joi.string(),
-            required : Joi.boolean().required(),
-        })
-    ),
+    "project": Joi.object({
+        "projectName": Joi.string().required(),
+        "posted": Joi.date(),
+        "description": Joi.string().required(),
+        "questions": Joi.array().items(Joi.string()),
+        "requirements": Joi.array().items(
+            Joi.object({
+                requirementType: Joi.number(),
+                requirementValue: Joi.string(),
+                required: Joi.boolean().required(),
+            })
+        ),
+    }).required(),
 })
 
 const deleteProjectSchema = Joi.object({
-    "id": Joi.string()
+    "projectID": Joi.string(),
+    "projectType": Joi.string()
 })
 
 module.exports = {
