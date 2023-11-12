@@ -20,4 +20,11 @@ router.delete('/deleteProject', verifyToken, facultyProjects.deleteProject);
 //GET Gets Projects from Account
 router.get('/getProjects', verifyToken, facultyProjects.getProjects);
 
+//PUT Update a Project from Account
+router.put('/updateProject', verifyToken, facultyProjects.updateProject);
+
+//PUT Archive a Project and move it to archived from Active
+router.put('/archiveProject', verifyToken, facultyProjects.archiveProject);
+
+
 module.exports = router;

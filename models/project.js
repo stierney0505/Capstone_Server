@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const researchOpp = new mongoose.Schema({
+    type: {
+        type: String,
+        required: true,
+    },
     professor: {
         type: String,
         required: true,
@@ -24,6 +28,10 @@ const researchOpp = new mongoose.Schema({
         posted: {
             type: Date,
             required: true
+        },
+        archived: {
+            type: Date,
+            required: false
         },
         description: {
             type: String,

@@ -183,7 +183,6 @@ describe('POST /api/changeEmailConfirm', () => {
 after(async () => {
     try {
         await User.deleteOne({ _id: removeID });
-        console.log("data deleted");
     } catch (err) {
         console.error(err);
     }
