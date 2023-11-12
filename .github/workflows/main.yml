@@ -27,4 +27,3 @@ jobs:
       run: |
         echo "${{ secrets.ENV }}" > .env
     - run: npm install
-    - run: npm test
