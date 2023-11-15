@@ -136,7 +136,7 @@ describe('POST /api/confirmResetPassword', () => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.have.property('success');
                 expect(res.body.success).to.have.property('status').to.equal(200);
-                expect(res.body.success).to.have.property('message').to.equal('PWD_RESET');
+                expect(res.body.success).to.have.property('message').to.equal('PWD_RESET_SUCCESS');
                 done();
             });
     });
@@ -173,7 +173,7 @@ describe('POST /api/changeEmailConfirm', () => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.have.property('success');
                 expect(res.body.success).to.have.property('status').to.equal(200);
-                expect(res.body.success).to.have.property('message').to.equal('EMAIL_CHANGED');
+                expect(res.body.success).to.have.property('message').to.equal('EMAIL_RESET_SUCCESS');
                 done();
             });
     });
