@@ -2,7 +2,7 @@ const Project = require('../models/project');
 const User = require('../models/user');
 const JWT = require('jsonwebtoken');
 const { projectSchema, deleteProjectSchema } = require('../helpers/inputValidation/validation');
-const mongoose = require('mongoose');
+const generateRes = require('../helpers/generateJSON');
 
 /*  This function handles the faculty project creation, should only be used as a POST request, and requires and access token
     This funciton takes information required for creating a faculty project, creates an active project in the DB, and updates the 
@@ -30,14 +30,10 @@ const createProject = async (req, res) => {
             //validate schema and ensure that the questions array has as many elements as the requirements array
             const { error } = projectSchema.validate(req.body.projectDetails);
             if (error || req.body.projectDetails.project.questions.length !== req.body.projectDetails.project.requirements.length) {
-                res.status(400).json({
-                    error: {
-                        status: 400,
-                        message: 'INPUT_ERROR',
-                        errors: error.details,
-                        original: error._original
-                    }
-                });
+                res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                    errors: error.details,
+                    original: error._original
+                }));
             }
 
             let projectType = req.body.projectType; //Stores the projectType and then checks to ensure it is valid
@@ -78,12 +74,12 @@ const createProject = async (req, res) => {
                     }
                 })
             }
-            res.status(200).json({ success: { status: 200, message: "PROJECT_CREATED" } });
+            res.status(200).json(generateRes(true, 200, "PROJECT_CREATED", {}));
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -105,14 +101,10 @@ const deleteProject = async (req, res) => {
         if (user.userType.Type === parseInt(process.env.FACULTY)) {
             const { error } = deleteProjectSchema.validate(req.body);
             if (error) { //validates request body otherwise returns an error
-                res.status(400).json({
-                    error: {
-                        status: 400,
-                        message: 'INPUT_ERROR',
-                        errors: error.details,
-                        original: error._original
-                    }
-                });
+                res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                    errors: error.details,
+                    original: error._original
+                }));
             }
 
             let recordID; //recordID will be taken from the user's record depending on the projectType field in the request
@@ -132,26 +124,26 @@ const deleteProject = async (req, res) => {
 
             //gets the project record, otherwise sends error response 
             let project = await Project.findById(recordID);
-            if (!project) { res.status(410).json({ error: { status: 410, message: "PROJECT_LIST_NOT_FOUND" } }) }
+            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
             else {
                 //If there is no error, get the number of projects from the projects array and then remove an the selected project from the array
                 let numProjects = project._doc.projects.length;
                 selectedProject = project.projects.pull(req.body.projectID);
 
                 if (selectedProject.length == numProjects) { //Check that an element was removed, if not send error response
-                    res.status(410).json({ error: { status: 410, message: "ITEM_NOT_FOUND" } })
+                    res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
                 }
                 else {
                     await project.save();
-                    res.status(200).json({ success: { status: 200, message: "PROJECT_DELETED" } });
+                    res.status(200).json(generateRes(true, 200, "PROJECT_DELETED", {}));
                 }
             }
 
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -176,14 +168,14 @@ const getProjects = async (req, res) => {
             let draftProjects = await Project.findById(projectsList.Draft);
 
             let data = { "archivedProjects": archivedProjects, "activeProjects": activeProjects, "draftProjects": draftProjects };
-
-            res.status(200).json({ success: { status: 200, message: "PROJECTS_FOUND", projects: data } });
+            //This specific response doesn't work with the generateRes method, will look into solutions
+            res.status(200).json({ success : { status : 200, message : "PROJECTS_FOUND", projects : data}});
 
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -209,14 +201,10 @@ const updateProject = async (req, res) => {
             //validate schema and ensure that the questions array has as many elements as the requirements array
             const { error } = projectSchema.validate(req.body.projectDetails);
             if (error || req.body.projectDetails.project.questions.length !== req.body.projectDetails.project.requirements.length) {
-                res.status(400).json({
-                    error: {
-                        status: 400,
-                        message: 'INPUT_ERROR',
-                        errors: error.details,
-                        original: error._original
-                    }
-                });
+                res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                    errors: error.details,
+                    original: error._original
+                }));
             }
 
             let recordID; //recordID will be taken from the user's record depending on the projectType field in the request
@@ -235,7 +223,7 @@ const updateProject = async (req, res) => {
             }
 
             let project = await Project.findById(recordID);
-            if (!project) { res.status(410).json({ error: { status: 410, message: "PROJECT_LIST_NOT_FOUND" } }) }
+            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
             else { //If the project list was found, then continue
                 //get and update the project from the project array that has the matching information 
                 project = await Project.updateOne({ _id: recordID, "projects": { "$elemMatch": { "_id": req.body.projectID } } }, {
@@ -250,15 +238,15 @@ const updateProject = async (req, res) => {
                 })
                 //check that the project was actually updated, if not send error response
                 if (project.matchedCount === 0)
-                    res.status(410).json({ error: { status: 410, message: "PROJECT_NOT_FOUND" } });
+                    res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
                 else
-                    res.status(200).json({ success: { status: 200, message: "PROJECT_UPDATED" } });
+                    res.status(200).json(generateRes(true, 200, "PROJECT_UPDATED", {}));
             }
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -279,25 +267,23 @@ const archiveProject = async (req, res) => {
         //check if user type is faculty
         if (user.userType.Type == process.env.FACULTY) {
             if (!req.body.projectID) {
-                res.status(400).json({
-                    error: {
-                        status: 400,
-                        message: 'INPUT_ERROR',
-                    }
-                });
+                res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                    errors: error.details,
+                    original: error._original
+                }));
             }
 
             const userId = user._id; //Grabs the active projects from the user specified by the access token and then checks to see if the list exists
             let project = await Project.findById(user.userType.FacultyProjects.Active);
-            if (!project) { res.status(410).json({ error: { status: 410, message: "PROJECT_LIST_NOT_FOUND" } }); return; }
+            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
 
             const archProject = project._doc.projects.find(x => x.id === req.body.projectID); //Grabs the specified project from the array from the Record
             if (!archProject) {
-                res.status(410).json({ error: { status: 410, message: "PROJECT_NOT_FOUND" } });
+                res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
                 return;
             }
             //If there is not an archived project list, create an archived project list
-            if (!user.userType.FacultyProjects.Archived) { 
+            if (!user.userType.FacultyProjects.Archived) {
                 let newArchiveList = new Project({
                     type: "Archived",
                     professor: user.name,
@@ -312,8 +298,8 @@ const archiveProject = async (req, res) => {
                     }]
                 });
                 await newArchiveList.save(); //Save the archlive list
-                var $set = { $set: {} }; 
-                $set.$set['userType.FacultyProjects.' + "Archived"] = newArchiveList._id; 
+                var $set = { $set: {} };
+                $set.$set['userType.FacultyProjects.' + "Archived"] = newArchiveList._id;
                 await User.findOneAndUpdate({ _id: userId }, $set); //Set the archive id in the user facultyProjects
             } else { //otherwise there exists a faculty record for archived projects so add a new element to the record's array
                 let newProject = {
@@ -336,17 +322,17 @@ const archiveProject = async (req, res) => {
             let selectedProject = project.projects.pull(req.body.projectID);
 
             if (selectedProject.length == numProjects) { //Check that an element was removed, if not send error response
-                res.status(410).json({ error: { status: 410, message: "ITEM_NOT_FOUND" } })
+                res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
             }
             else {
                 await project.save();
-                res.status(200).json({ success: { status: 200, message: "PROJECT_ARCHIVED" } });
+                res.status(200).json(generateRes(true, 200, "PROJECT_ARCHIVED", {}));
             }
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 

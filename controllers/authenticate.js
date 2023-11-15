@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const moment = require('moment');
+const generateRes = require('../helpers/generateJSON');
 
 /*  This function handles the login funciton, should only be used with a POST request
     This funciton takes the login credentials and returns an accesstoken and refresh token
@@ -14,14 +15,13 @@ const moment = require('moment');
 */
 const login = async (req, res) => {
     try {
-        const { error } = loginSchema.validate(req.body); 
+        const { error } = loginSchema.validate(req.body);
         if (error) { //validates the request body, and responds with error if there is an error
-            res.status(400).json({
-                status: 400,
-                message: 'INPUT_ERROR',
+            res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
                 errors: error.details,
                 original: error._original
-            });
+            }));
+            return;
         } else {
             const user = await User.findOne({ email: req.body.email });
 
@@ -36,27 +36,23 @@ const login = async (req, res) => {
                     const refreshToken = generateRefreshToken(user.id, user.email, user.name);
 
                     if (await addRefreshToken(user, refreshToken)) { //adds refreshtoken to db
-                        res.status(200).json({
-                            success: {
-                                status: 200,
-                                message: "LOGIN_SUCCESS",
-                                accessToken: accessToken,
-                                refreshToken: refreshToken
-                            }
-                        });
+                        res.status(200).json(generateRes(true, 200, "LOGIN_SUCCESS", {
+                            accessToken: accessToken,
+                            refreshToken: refreshToken,
+                        }));
                     } else {
-                        res.status(500).json({ error: { status: 500, message: 'SERVER_ERROR' } });
+                        res.status(500).json(generateRes(false, 500, "SERVER_ERROR", {}));
                     }
                 } else {
-                    res.status(403).json({ error: { status: 403, message: "INVALID_PASSWORD" } });
+                    res.status(403).json(generateRes(false, 403, "INVALID_PASSWORD", {}));
                 }
             } else {
-                res.status(403).json({ error: { status: 403, message: "INVALID_EMAIL" } });
+                res.status(403).json(generateRes(false, 403, "INVALID_EMAIL", {}));
             }
         }
     } catch (error) {
         console.log(error);
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -68,10 +64,13 @@ const login = async (req, res) => {
     email (String, email of account) - name (String, name of user) - password (String, password for the account)
 */
 const register = async (req, res) => {
-    try { 
+    try {
         const { error } = registerSchema.validate(req.body, { abortEarly: false });
         if (error) { //Validates the request body against the registration schema, otherwise sends an error response
-            res.status(400).json({ error: { status: 400, message: 'INPUT_ERROR', errors: error.details, original: error._original }});
+            res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                errors: error.details, original: error._original
+            }));
+            return;
         } else {
             //hash the user's password
             const salt = await bcrypt.genSalt(10);
@@ -95,10 +94,10 @@ const register = async (req, res) => {
                 userType: { //Temporarialy hardcoded, will make every account a faculty account, will be updated in the future
                     Type: 1,
                     Confirmed: true,
-                    FacultyProjects : {
-                        Active : null,
-                        Archived : null,
-                        Draft : null,
+                    FacultyProjects: {
+                        Active: null,
+                        Archived: null,
+                        Draft: null,
                     }
                 },
             });
@@ -123,10 +122,8 @@ const register = async (req, res) => {
 
             await sendEmailConfirmation(user);
 
-            res.status(200).header().json({
-                success: {
-                    status: 200,
-                    message: 'REGISTER_SUCCESS',
+            res.status(200).header().json(
+                generateRes(true, 200, "REGISTER_SUCCESS", {
                     accessToken: access_token,
                     refreshToken: refreshToken,
                     user: {
@@ -134,8 +131,7 @@ const register = async (req, res) => {
                         email: user.email,
                         name: user.name,
                     }
-                }
-            });
+                }));
         }
     } catch (error) {
         let errMessage;
@@ -146,7 +142,7 @@ const register = async (req, res) => {
             errMessage = err;
         }
 
-        res.status(400).json({ error: { status: 400, message: errMessage } })
+        res.status(400).json(generateRes(false, 400, errMessage, {}));
     }
 }
 
@@ -170,21 +166,17 @@ const token = async (req, res) => {
                 //generate new access token
                 const access_token = generateAccessToken(user.id, user.email, user.name);
 
-                res.status(200).header().json({
-                    success: {
-                        status: 200,
-                        message: 'ACCESS_TOKEN_GENERATED',
-                        accessToken: access_token
-                    },
-                });
+                res.status(200).header().json(generateRes(true, 200, "ACCESS_TOKEN_GENERATED", {
+                    accessToken: access_token
+                }));
             } else {
-                res.status(401).json({ error: { status: 401, message: 'EXPIRED_REFRESH_TOKEN' } });
+                res.status(401).json(generateRes(false, 401, "EXPIRED_REFRESH_TOKEN", {}));
             }
         } catch (error) {
-            res.status(401).json({ error: { status: 401, message: 'INVALID_REFRESH_TOKEN' } });
+            res.status(401).json(generateRes(false, 401, "INVALID_REFRESH_TOKEN", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: 'BAD_REQUEST' } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -211,18 +203,18 @@ const confirmEmailToken = async (req, res) => {
                 //check if provided email token matches
                 if (emailToken === user.emailToken) {
                     await User.updateOne({ email: decodeAccessToken.email }, { $set: { emailConfirmed: true, emailToken: null } })
-                    res.status(200).json({ success: { status: 200, message: "EMAIL_CONFIRMED" } });
+                    res.status(200).json(generateRes(true, 200, "EMAIL_CONFIRMED", {}));
                 } else {
-                    res.status(401).json({ error: { status: 401, message: "INVALID_EMAIL_TOKEN" } });
+                    res.status(401).json(generateRes(false, 401, "INVALID_EMAIL_TOKEN", {}));
                 }
             } else {
-                res.status(401).json({ error: { status: 401, message: "EMAIL_ALREADY_CONFIRMED" } });
+                res.status(401).json(generateRes(false, 401, "EMAIL_ALREADY_CONFIRMED", {}));
             }
         } else {
-            res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -256,13 +248,13 @@ const resetPassword = async (req, res) => {
             });
             //sends email to the users notifying them
             await sendPasswordResetConfirmation({ email: req.body.email, passwordResetToken: passwordResetToken })
-            res.status(200).json({ success: { status: 200, message: "PWD_RESET_EMAIL_SENT" } })
+            res.status(200).json(generateRes(true, 200, "PWD_RESET_EMAIL_SENT", {}));
 
         } else {
-            res.status(400).json({ error: { status: 400, message: "INPUT_ERROR" } });
+            res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -291,7 +283,7 @@ const resetPasswordConfirm = async (req, res) => {
                     },
                 });
 
-                res.status(200).json({ success: { status: 200, message: "PWD_RESET" } });
+                res.status(200).json(generateRes(true, 200, "PWD_RESET_SUCCESS", {}));
             } else {
                 //Removing password reset token because expiry  
                 await User.updateOne({ email: req.body.email }, {
@@ -301,13 +293,13 @@ const resetPasswordConfirm = async (req, res) => {
                         'security.passwordReset.expiry': null,
                     },
                 });
-                res.status(401).json({ error: { status: 401, message: "PWD_TOKEN_EXPIRED" } });
+                res.status(401).json(generateRes(false, 401, "PWD_TOKEN_EXPIRED", {}));
             }
         } else {
-            res.status(401).json({ error: { status: 401, message: "INVALID_PWD_TOKEN" } });
+            res.status(401).json(generateRes(false, 401, "INVALID_PWD_TOKEN", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
@@ -335,26 +327,26 @@ const changeEmailConfirm = async (req, res) => {
                 //check that email token isn't expired
                 if (new Date().getTime() <= new Date(user.security.changeEmail.expiry).getTime()) {
                     await User.updateOne({ email: decodeAccessToken.email }, {
-                        $set: { 
+                        $set: {
                             'email': user.security.changeEmail.provisionalEmail,
                             'security.changeEmail.token': null,
                             'security.changeEmail.provisionalEmail': null,
                             'security.changeEmail.expiry': null,
                         },
                     });
-                    res.status(200).json({ success: { status: 200, message: "EMAIL_CHANGED" } });
+                    res.status(200).json(generateRes(true, 200, "EMAIL_RESET_SUCCESS", {}));
                 } else { //Otherwise the email token is expired and the reset token fields should be reset
                     await User.updateOne({ email: decodeAccessToken.email }, {
-                        $set: { 
+                        $set: {
                             'security.changeEmail.token': null,
                             'security.changeEmail.provisionalEmail': null,
                             'security.changeEmail.expiry': null,
                         },
                     });
-                    res.status(401).json({ error: { status: 401, message: "EMAIL_TOKEN_EXPIRED" } });
+                    res.status(401).json(generateRes(false, 401, "EMAIL_TOKEN_EXPIRED", {}));
                 }
             } else {
-                res.status(401).json({ error: { status: 401, message: "INVALID_EMAIL_TOKEN" } });
+                res.status(401).json(generateRes(false, 401, "INVALID_EMAIL_TOKEN", {}));
             }
         } else { //if the email already exists remove the emailreset fields
             await User.updateOne({ email: decodeAccessToken.email }, {
@@ -366,7 +358,7 @@ const changeEmailConfirm = async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 };
 
@@ -405,15 +397,15 @@ const changeEmail = async (req, res) => {
                 });
 
                 await changeEmailConfirmation({ email: user.email, emailToken: changeEmailToken });
-                res.status(200).json({ success: { status: 200, message: "CHANGE_EMAIL_SENT" } });
+                res.status(200).json(generateRes(true, 200, "CHANGE_EMAIL_SENT", {}));
             } else {
-                res.status(400).json({ error: { status: 400, message: "EMAIL_EXISTS" } });
+                res.status(400).json(generateRes(false, 400, "EMAIL_EXISTS", {}));
             }
         } else {
-            res.status(400).json({ error: { status: 400, message: "INPUT_ERROR" } });
+            res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {}));
         }
     } catch (error) {
-        res.status(400).json({ error: { status: 400, message: "BAD_REQUEST" } });
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
 
