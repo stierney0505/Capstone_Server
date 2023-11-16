@@ -86,10 +86,10 @@ describe('POST /api/confirmEmail', () => {
     });
 });
 
-describe('POST /api/auth/token', () => {
+describe('POST /api/token', () => {
     it('should return a success response and provide new access token', (done) => {
         chai.request(server)
-            .post('/api/auth/token')
+            .post('/api/token')
             .set({ "Authorization": `Bearer ${access_token}` })
             .send({ "refreshToken": refresh_token })
             .end((err, res) => {
