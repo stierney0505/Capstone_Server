@@ -311,7 +311,7 @@ const archiveProject = async (req, res) => {
                     questions: archProject.questions,
                     requirements: archProject.requirements,
                 };
-                await Project.updateOne({ _id: existingProject }, {
+                await Project.updateOne({ _id: user.userType.FacultyProjects.Archived }, {
                     $push: { //push new project to the array 
                         projects: newProject,
                     }
