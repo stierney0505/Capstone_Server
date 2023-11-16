@@ -2,9 +2,13 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main", "WorkBranch"]
+    branches: 
+      - '*'         # matches every branch that doesn't contain a '/'
+      - '*/*'       # matches every branch containing a single '/'
+      - '**'        # matches every branch
+      - '!main'
   pull_request:
-    branches: [ "main", "WorkBranch"]
+    branches:  "main"
 
 jobs:
   build:
