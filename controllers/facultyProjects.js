@@ -34,6 +34,7 @@ const createProject = async (req, res) => {
                     errors: error.details,
                     original: error._original
                 }));
+                return;
             }
 
             let projectType = req.body.projectType; //Stores the projectType and then checks to ensure it is valid
@@ -44,7 +45,7 @@ const createProject = async (req, res) => {
             if (!existingProject) {
                 let newProjectList = new Project({
                     type: req.body.projectType,
-                    professor: req.body.professor,
+                    professorEmail: user.email,
                     projects: [{
                         projectName: req.body.projectDetails.project.projectName,
                         professorId: userId,
@@ -79,6 +80,7 @@ const createProject = async (req, res) => {
             res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
         }
     } catch (error) {
+        console.log(error);
         res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
     }
 }
@@ -105,6 +107,7 @@ const deleteProject = async (req, res) => {
                     errors: error.details,
                     original: error._original
                 }));
+                return;
             }
 
             let recordID; //recordID will be taken from the user's record depending on the projectType field in the request
@@ -128,7 +131,7 @@ const deleteProject = async (req, res) => {
             else {
                 //If there is no error, get the number of projects from the projects array and then remove an the selected project from the array
                 let numProjects = project._doc.projects.length;
-                selectedProject = project.projects.pull(req.body.projectID);
+                let selectedProject = project.projects.pull(req.body.projectID);
 
                 if (selectedProject.length == numProjects) { //Check that an element was removed, if not send error response
                     res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
@@ -205,6 +208,7 @@ const updateProject = async (req, res) => {
                     errors: error.details,
                     original: error._original
                 }));
+                return;
             }
 
             let recordID; //recordID will be taken from the user's record depending on the projectType field in the request
@@ -271,6 +275,7 @@ const archiveProject = async (req, res) => {
                     errors: error.details,
                     original: error._original
                 }));
+                return;
             }
 
             const userId = user._id; //Grabs the active projects from the user specified by the access token and then checks to see if the list exists
@@ -286,7 +291,7 @@ const archiveProject = async (req, res) => {
             if (!user.userType.FacultyProjects.Archived) {
                 let newArchiveList = new Project({
                     type: "Archived",
-                    professor: user.name,
+                    professorEmail: user.email,
                     projects: [{
                         projectName: archProject.projectName,
                         professorId: archProject.professorId,

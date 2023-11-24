@@ -54,19 +54,9 @@ const userSchema = new mongoose.Schema({
                 ref: 'ProjectGroup'
             }
         },
-        StudentProjects: {
-            Rejected: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'ProjectGroup'
-            },
-            Pending: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'ProjectGroup'
-            },
-            Accepted: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'ProjectGroup'
-            }
+        studentApplications: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Applications'
         }
     },
     emailToken: {

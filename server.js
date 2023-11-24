@@ -12,10 +12,12 @@ app.use(cors());
 //routes
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
+const applicationRoutes = require('./routes/applicationRoutes');
 
 //Endpoints
 app.use('/api', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/applications', applicationRoutes);
 
 require('dotenv').config();
 const port = process.env.PORT || 3000;

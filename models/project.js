@@ -5,7 +5,7 @@ const researchOpp = new mongoose.Schema({
         type: String,
         required: true,
     },
-    professor: {
+    professorEmail: {
         type: String,
         required: true,
     },
@@ -19,9 +19,15 @@ const researchOpp = new mongoose.Schema({
             required: true,
         },
         applications: [
-            {
+            {   
+                applicationRecordID: {
+                    type: mongoose.Schema.Types.ObjectId, ref: 'ApplicationRecord'
+                },
                 application: {
                     type: mongoose.Schema.Types.ObjectId, ref: 'Application'
+                },
+                status: {
+                    type: String
                 }
             }
         ],

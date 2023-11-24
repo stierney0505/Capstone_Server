@@ -25,7 +25,7 @@ describe('POST /api/register', () => {
     it('should return a registeration success response', (done) => {
         chai.request(server)
             .post('/api/register')
-            .send({ "email": randomEmail, "name": randomName, "password": randomPass })
+            .send({ "email": randomEmail, "name": randomName, "password": randomPass, "accountType": 1 })
             .end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.have.property('success');
@@ -50,7 +50,7 @@ describe('POST /api/projects/createProject', () => {
             .post('/api/projects/createProject')
             .set({ "Authorization": `Bearer ${access_token}` })
             .send({
-                "professor": "SEAN",
+                "professorEmail": randomEmail,
                 "projectType": "Active",
                 "projectDetails": {
                     "project": {

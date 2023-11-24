@@ -29,7 +29,7 @@ describe('POST /api/register', () => {
     it('should return a registeration success response', (done) => {
         chai.request(server)
             .post('/api/register')
-            .send({ "email": randomEmail, "name": randomName, "password": randomPass })
+            .send({ "email": randomEmail, "name": randomName, "password": randomPass, "accountType": 1 })
             .end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.have.property('success');

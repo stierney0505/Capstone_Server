@@ -1,22 +1,36 @@
 const mongoose = require('mongoose');
 
-const ApplicationOpp = new mongoose.Schema({
+const Applications = new mongoose.Schema({
     user: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         required: true,
     },
-    questions: [{
-        question: String,
-        answer: String
-    }],
-    opportunityId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
-    status: {
-        type: Boolean,
-        required: true
-    }
+    applications: [
+        {
+            questions: [{
+                question: String,
+                answer: String
+            }],
+            answers: [{
+                question: String,
+                answer: String
+            }],
+            opportunityRecordId: {
+                type: mongoose.Schema.Types.ObjectId,
+                required: true
+            },
+            opportunityId: {
+                type: mongoose.Schema.Types.ObjectId,
+                required: true,
+                unique: true,
+                index: true,
+            },
+            status: {
+                type: String,
+                required: true
+            }
+        }
+    ]
 })
 
-module.exports = mongoose.model('Application', userSchema);
+module.exports = mongoose.model('application', Applications);

@@ -92,13 +92,8 @@ const register = async (req, res) => {
                     }
                 },
                 userType: { //Temporarialy hardcoded, will make every account a faculty account, will be updated in the future
-                    Type: 1,
+                    Type: req.body.accountType,
                     Confirmed: true,
-                    FacultyProjects: {
-                        Active: null,
-                        Archived: null,
-                        Draft: null,
-                    }
                 },
             });
 
