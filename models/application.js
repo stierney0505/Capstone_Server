@@ -22,8 +22,6 @@ const Applications = new mongoose.Schema({
             opportunityId: {
                 type: mongoose.Schema.Types.ObjectId,
                 required: true,
-                unique: true,
-                index: true,
             },
             status: {
                 type: String,

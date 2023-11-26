@@ -1,7 +1,8 @@
 const Project = require('../models/project');
+const Application = require('../models/application');
 const User = require('../models/user');
 const JWT = require('jsonwebtoken');
-const { projectSchema, deleteProjectSchema } = require('../helpers/inputValidation/validation');
+const { projectSchema, deleteProjectSchema, appDecision } = require('../helpers/inputValidation/validation');
 const generateRes = require('../helpers/generateJSON');
 
 /*  This function handles the faculty project creation, should only be used as a POST request, and requires and access token
@@ -127,14 +128,15 @@ const deleteProject = async (req, res) => {
 
             //gets the project record, otherwise sends error response 
             let project = await Project.findById(recordID);
-            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
+            if (!project) { res.status(404).json(generateRes(false, 404, "PROJECT_LIST_NOT_FOUND", {})); return; }
             else {
                 //If there is no error, get the number of projects from the projects array and then remove an the selected project from the array
                 let numProjects = project._doc.projects.length;
                 let selectedProject = project.projects.pull(req.body.projectID);
 
                 if (selectedProject.length == numProjects) { //Check that an element was removed, if not send error response
-                    res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
+                    res.status(404).json(generateRes(false, 404, "PROJECT_NOT_FOUND", {}));
+                    return;
                 }
                 else {
                     await project.save();
@@ -172,7 +174,7 @@ const getProjects = async (req, res) => {
 
             let data = { "archivedProjects": archivedProjects, "activeProjects": activeProjects, "draftProjects": draftProjects };
             //This specific response doesn't work with the generateRes method, will look into solutions
-            res.status(200).json({ success : { status : 200, message : "PROJECTS_FOUND", projects : data}});
+            res.status(200).json({ success: { status: 200, message: "PROJECTS_FOUND", projects: data } });
 
         } else {
             res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
@@ -227,7 +229,7 @@ const updateProject = async (req, res) => {
             }
 
             let project = await Project.findById(recordID);
-            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
+            if (!project) { res.status(404).json(generateRes(false, 404, "PROJECT_LIST_NOT_FOUND", {})); return; }
             else { //If the project list was found, then continue
                 //get and update the project from the project array that has the matching information 
                 project = await Project.updateOne({ _id: recordID, "projects": { "$elemMatch": { "_id": req.body.projectID } } }, {
@@ -242,7 +244,7 @@ const updateProject = async (req, res) => {
                 })
                 //check that the project was actually updated, if not send error response
                 if (project.matchedCount === 0)
-                    res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
+                    res.status(404).json(generateRes(false, 404, "PROJECT_NOT_FOUND", {}));
                 else
                     res.status(200).json(generateRes(true, 200, "PROJECT_UPDATED", {}));
             }
@@ -280,11 +282,11 @@ const archiveProject = async (req, res) => {
 
             const userId = user._id; //Grabs the active projects from the user specified by the access token and then checks to see if the list exists
             let project = await Project.findById(user.userType.FacultyProjects.Active);
-            if (!project) { res.status(410).json(generateRes(false, 410, "PROJECT_LIST_NOT_FOUND", {})); return; }
+            if (!project) { res.status(404).json(generateRes(false, 404, "PROJECT_LIST_NOT_FOUND", {})); return; }
 
             const archProject = project._doc.projects.find(x => x.id === req.body.projectID); //Grabs the specified project from the array from the Record
             if (!archProject) {
-                res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
+                res.status(404).json(generateRes(false, 404, "PROJECT_NOT_FOUND", {}));
                 return;
             }
             //If there is not an archived project list, create an archived project list
@@ -327,7 +329,7 @@ const archiveProject = async (req, res) => {
             let selectedProject = project.projects.pull(req.body.projectID);
 
             if (selectedProject.length == numProjects) { //Check that an element was removed, if not send error response
-                res.status(410).json(generateRes(false, 410, "PROJECT_NOT_FOUND", {}));
+                res.status(404).json(generateRes(false, 404, "PROJECT_NOT_FOUND", {}));
             }
             else {
                 await project.save();
@@ -341,10 +343,75 @@ const archiveProject = async (req, res) => {
     }
 }
 
+/*  This function handles the faculty decision making for applications, should only be used as a PUT request, and requires an access token
+    This funciton sets the values of status for the application to the value given in the request across both the faculty project record and the 
+    student application record. This request takes project id, application id, and decision in the request body.
+
+    The request body requires the following fields : 
+    projectID (String, the objectID of the active project that was applied to) - applicationID (String, the objectID of the application that is being decide upon)
+    decision (String, the decision for the application. Either Accept of Reject)
+*/
+const applicationDecision = async (req, res) => {
+    try {
+        const decision = req.body.decision; //checks if the decision is valid otherwise ends the request
+        if (decision != "Accept" && decision != "Reject") { generateRes(false, 400, "INPUT_ERROR", {}); return; }
+
+        const accessToken = req.header('Authorization').split(' ')[1];
+        const decodeAccessToken = JWT.verify(accessToken, process.env.SECRET_ACCESS_TOKEN);
+
+        //check if user exists
+        const faculty = await User.findOne({ email: decodeAccessToken.email });
+
+        //check if user type is faculty
+        if (faculty.userType.Type == process.env.FACULTY) {
+            const { error } = appDecision.validate(req.body);
+            if (error) { //validates request body otherwise returns an error
+                res.status(400).json(generateRes(false, 400, "INPUT_ERROR", {
+                    errors: error.details,
+                    original: error._original
+                }));
+                return;
+            }
+            //get the projectlist from the faculty account
+            let project = await Project.findOne({ _id: faculty.userType.FacultyProjects.Active });
+            if (!project) { res.status(404).json(generateRes(false, 404, "PROJECT_LIST_NOT_FOUND", {})); return; }
+            //get the index of the project for the projects array and the application index in the specified project's application array
+            const projIndex = project.projects.findIndex(y => y.id === req.body.projectID);
+            const projAppIndex = project.projects[projIndex].applications.findIndex(x => x.application.toString() === req.body.applicationID);
+            //get the application list from the application id
+            let application = await Application.findOne({ _id: project.projects[projIndex].applications[projAppIndex].applicationRecordID });
+            if (!application) { res.status(404).json(generateRes(false, 404, "APPLICATION_LIST_NOT_FOUND", {})); return; }
+            //get the application index from the application record
+            const appIndex = application.applications.findIndex(x => x.id === req.body.applicationID);
+            //grabs the statuses from the project and application records
+            projectStatus = project.projects[projIndex].applications[projAppIndex].status;
+            applicationStatus = application.applications[appIndex].status;
+            //if the status are not pending, then the request shouldn't modify anything because the decision is already made - MIGHT CHANGE IN FUTURE!
+            if (projectStatus != "Pending" || applicationStatus != "Pending") { res.status(401).json(generateRes(false, 401, "DECISION_ALREADY_UPDATED", {})); return; }
+            //Set status
+            project.projects[projIndex].applications[projAppIndex].status = decision;
+            application.applications[appIndex].status = decision;
+            
+            const savePromises = [
+                project.save(),
+                application.save()
+            ];
+
+            await Promise.all(savePromises);
+            res.status(200).json(generateRes(true, 200, "APPLICATION_STATUS_UPDATED", {}));
+
+        } else {
+            res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
+        }
+    } catch (error) {
+        res.status(400).json(generateRes(false, 400, "BAD_REQUEST", {}));
+    }
+}
+
 
 
 module.exports = {
     createProject, deleteProject,
     getProjects, updateProject,
-    archiveProject
+    archiveProject, applicationDecision
 };

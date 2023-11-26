@@ -26,5 +26,8 @@ router.put('/updateProject', verifyToken, facultyProjects.updateProject);
 //PUT Archive a Project and move it to archived from Active
 router.put('/archiveProject', verifyToken, facultyProjects.archiveProject);
 
+//PUT Accpet or Reject an application for a project
+router.put('/application', verifyToken, facultyProjects.applicationDecision);
+
 
 module.exports = router;

@@ -33,8 +33,21 @@ const projectSchema = Joi.object({
 })
 
 const deleteProjectSchema = Joi.object({
-    "projectID": Joi.string(),
-    "projectType": Joi.string()
+    "projectID": Joi.string().required(),
+    "projectType": Joi.string().required()
+})
+
+const createApplicationSchema = Joi.object({
+    "projectID": Joi.string().required(),
+    "professorEmail": Joi.string().required(),
+    "questions": Joi.array().required(),
+    "answers": Joi.array().required()
+})
+
+const appDecision = Joi.object({
+    "projectID": Joi.string().required(),
+    "applicationID": Joi.string().required(),
+    "decision": Joi.string().required()
 })
 
 module.exports = {
@@ -42,5 +55,6 @@ module.exports = {
     loginSchema,
     emailSchema,
     projectSchema,
-    deleteProjectSchema
+    deleteProjectSchema,
+    appDecision
 }
