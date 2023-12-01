@@ -1,0 +1,47 @@
+services:
+
+  # Angular service
+  frontend:
+    build:
+      context: "./Capstone_Client/client"
+      dockerfile: "./Dockerfile"
+    networks:
+      - capstone_net
+  
+  # Node API service
+  backend:
+    build:
+      context: "./Capstone_Server"
+      dockerfile: "./Dockerfile"
+    # depends_on:
+    #   - db
+    networks:
+      - capstone_net
+  
+  # MongoDB service
+  # db:
+  #   image: mongo:latest
+  #   restart: always
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=cap_user
+  #     - MONGO_INITDB_ROOT_PASSWORD=pass4DB@460
+  #   ports:
+  #     - 27017:27017
+  #   networks:
+  #     - capstone_net
+  
+  # Nginx proxy service
+  proxy:
+    image: nginx:stable-alpine
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.conf
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/nginx.conf.conf
+    ports:
+      - 3000:3000
+    networks:
+      - capstone_net
+
+networks:
+  capstone_net:
